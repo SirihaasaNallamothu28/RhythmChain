@@ -1,87 +1,115 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Waveform } from "@/components/waveform"
-import { VerificationResult } from "@/components/verification-result"
-import { Upload, Link2, Music, Loader2 } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Waveform } from "@/components/waveform";
+import { VerificationResult } from "@/components/verification-result";
+import { Upload, Link2, Music, Loader2 } from "lucide-react";
 
 export function MusicVerifier() {
-  const [file, setFile] = useState<File | null>(null)
-  const [url, setUrl] = useState("")
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [verificationComplete, setVerificationComplete] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [result, setResult] = useState<{
-    isOriginal: boolean
-    confidence: number
-    artist?: string
-    title?: string
-    registrationDate?: string
-  } | null>(null)
+  const [file, setFile] = useState<File | null>(null);
+  const [url, setUrl] = useState("");
+  const [hash, setHash] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-      setUrl("")
+  const hashMessage = async (message: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  };
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationComplete, setVerificationComplete] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<{
+    isOriginal: boolean;
+    confidence: number;
+    artist?: string;
+    title?: string;
+    registrationDate?: string;
+  } | null>(null);
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const selectedFile = event.target.files?.[0] || null;
+    if (!selectedFile) {
+      alert("Please upload an audio file.");
+      return;
     }
-  }
+    setFile(selectedFile);
+
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const hexString = Array.from(uint8Array)
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+      const computedHash = await hashMessage(hexString);
+      setHash(computedHash);
+      console.log("SHA-256 Hash:", computedHash);
+      alert("Audio uploaded successfully!");
+    } catch (error) {
+      console.error("Error reading audio file:", error);
+      alert("Failed to process the audio file.");
+    }
+  };
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUrl(e.target.value)
-    setFile(null)
-  }
+    setUrl(e.target.value);
+    setFile(null);
+  };
 
   const simulateVerification = () => {
-    setIsVerifying(true)
-    setProgress(0)
-    setVerificationComplete(false)
+    setIsVerifying(true);
+    setProgress(0);
+    setVerificationComplete(false);
 
     // Simulate progress
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const newProgress = prev + Math.random() * 15
+        const newProgress = prev + Math.random() * 15;
         if (newProgress >= 100) {
-          clearInterval(interval)
+          clearInterval(interval);
           setTimeout(() => {
             // Randomly determine if the music is original or not for demo purposes
-            const isOriginal = Math.random() > 0.5
+            const isOriginal = Math.random() > 0.5;
             setResult({
               isOriginal,
               confidence: 70 + Math.floor(Math.random() * 25),
               artist: isOriginal ? "olivia rodriguez" : undefined,
               title: isOriginal ? "digital heartbeat" : undefined,
               registrationDate: isOriginal ? "2024-12-15" : undefined,
-            })
-            setVerificationComplete(true)
-            setIsVerifying(false)
-          }, 500)
-          return 100
+            });
+            setVerificationComplete(true);
+            setIsVerifying(false);
+          }, 500);
+          return 100;
         }
-        return newProgress
-      })
-    }, 500)
-  }
+        return newProgress;
+      });
+    }, 500);
+  };
 
   const handleVerify = () => {
     if (file || url) {
-      simulateVerification()
+      simulateVerification();
     }
-  }
+  };
 
   const resetVerification = () => {
-    setFile(null)
-    setUrl("")
-    setVerificationComplete(false)
-    setResult(null)
-  }
+    setFile(null);
+    setUrl("");
+    setVerificationComplete(false);
+    setResult(null);
+  };
 
   return (
     <Card className="w-full overflow-hidden border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
@@ -97,14 +125,20 @@ export function MusicVerifier() {
                   <Upload className="h-4 w-4" />
                   upload file
                 </TabsTrigger>
-                <TabsTrigger value="link" className="lowercase flex items-center gap-2 data-[state=active]:bg-zinc-700">
+                <TabsTrigger
+                  value="link"
+                  className="lowercase flex items-center gap-2 data-[state=active]:bg-zinc-700"
+                >
                   <Link2 className="h-4 w-4" />
                   paste link
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="upload" className="mt-6 space-y-4">
                 <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="music-file" className="lowercase text-zinc-400">
+                  <Label
+                    htmlFor="music-file"
+                    className="lowercase text-zinc-400"
+                  >
                     upload music file
                   </Label>
                   <div className="flex items-center gap-2">
@@ -116,12 +150,19 @@ export function MusicVerifier() {
                       className="flex-1 bg-zinc-800 border-zinc-700 text-zinc-300"
                     />
                   </div>
-                  {file && <p className="text-sm text-zinc-500 lowercase">selected: {file.name}</p>}
+                  {file && (
+                    <p className="text-sm text-zinc-500 lowercase">
+                      selected: {file.name}
+                    </p>
+                  )}
                 </div>
               </TabsContent>
               <TabsContent value="link" className="mt-6 space-y-4">
                 <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="music-url" className="lowercase text-zinc-400">
+                  <Label
+                    htmlFor="music-url"
+                    className="lowercase text-zinc-400"
+                  >
                     music url
                   </Label>
                   <Input
@@ -141,7 +182,9 @@ export function MusicVerifier() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Music className="h-5 w-5 text-violet-500" />
-                    <span className="font-medium lowercase text-zinc-300">{file ? file.name : "music from url"}</span>
+                    <span className="font-medium lowercase text-zinc-300">
+                      {file ? file.name : "music from url"}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-4">
@@ -155,9 +198,12 @@ export function MusicVerifier() {
                 <div className="flex flex-col items-center justify-center gap-4 text-center">
                   <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
                   <div>
-                    <h3 className="text-lg font-medium lowercase text-zinc-200">verifying authenticity</h3>
+                    <h3 className="text-lg font-medium lowercase text-zinc-200">
+                      verifying authenticity
+                    </h3>
                     <p className="text-sm text-zinc-400 lowercase">
-                      analyzing audio fingerprint and checking blockchain records...
+                      analyzing audio fingerprint and checking blockchain
+                      records...
                     </p>
                   </div>
                 </div>
@@ -166,10 +212,10 @@ export function MusicVerifier() {
                   {progress < 30
                     ? "extracting audio features..."
                     : progress < 60
-                      ? "comparing with blockchain registry..."
-                      : progress < 90
-                        ? "analyzing ai generation patterns..."
-                        : "finalizing verification..."}
+                    ? "comparing with blockchain registry..."
+                    : progress < 90
+                    ? "analyzing ai generation patterns..."
+                    : "finalizing verification..."}
                 </p>
               </div>
             )}
@@ -197,6 +243,5 @@ export function MusicVerifier() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
-
