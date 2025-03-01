@@ -6,7 +6,7 @@ export default function Home() {
     <div className="app">
 
       <main>
-        <h2>Welcome to RthymChain</h2>
+        <h2>Welcome to RythmChain</h2>
         <p>Please sign in with your Solana wallet to continue</p>
         {/* <SolanaSignIn /> */}
       </main>
