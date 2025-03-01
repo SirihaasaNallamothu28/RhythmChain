@@ -4,6 +4,7 @@ import { MusicVerifier } from "@/components/music-verifier";
 import { HowItWorks } from "@/components/how-it-works";
 import { RecentVerifications } from "@/components/recent-verifications";
 import { Music4 } from "lucide-react";
+import ConnectWalletButton from "@/components/wallet_connect";
 
 export default function Home() {
   return (
@@ -28,9 +29,7 @@ export default function Home() {
               recent verifications
             </Link>
           </nav>
-          <Button size="sm" variant="ghost" className="lowercase">
-            connect wallet
-          </Button>
+          <ConnectWalletButton />
         </div>
       </header>
       <main className="container px-4 py-12 md:px-6 md:py-16">
