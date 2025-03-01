@@ -13,7 +13,7 @@ export default function Home() {
         <div className="container flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2">
             <Music4 className="h-4 w-4 text-violet-500" />
-            <span className="text-lg font-medium">rhythmChain</span>
+            <span className="text-xl font-medium">rhythmChain</span>
           </Link>
           <nav className="hidden md:flex gap-6">
             <Link

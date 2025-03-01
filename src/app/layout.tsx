@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display } from "next/font/google";
 import "../../styles/globals.css";
 import SolanaProvider from "./SolanaProvider";
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 const inter = Playfair_Display({ subsets: ["latin"] });
 
