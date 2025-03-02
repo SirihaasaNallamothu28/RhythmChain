@@ -15,7 +15,8 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 
 // You'll need to import your IDL
-import idl from "@/idl/rhythm_chain.json";
+import idl from "public/idl/rhythmChain.json";
+// /Users/sirihaasanallamothu/Desktop/Sirihaasa/RhythmChain/
 import { AnchorProvider, BN, Program, web3 } from "@coral-xyz/anchor";
 
 const PROGRAM_ID = "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF";
@@ -405,10 +406,10 @@ export function MusicVerifier() {
                   {progress < 30
                     ? "extracting audio features..."
                     : progress < 60
-                    ? "comparing with blockchain registry..."
-                    : progress < 90
-                    ? "analyzing audio patterns..."
-                    : "finalizing verification..."}
+                      ? "comparing with blockchain registry..."
+                      : progress < 90
+                        ? "analyzing audio patterns..."
+                        : "finalizing verification..."}
                 </p>
               </div>
             )}

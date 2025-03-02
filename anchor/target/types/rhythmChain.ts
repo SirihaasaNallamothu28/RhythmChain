@@ -37,20 +37,8 @@ export type RhythmChain = {
           "pda": {
             "seeds": [
               {
-                "kind": "const",
-                "value": [
-                  114,
-                  104,
-                  121,
-                  116,
-                  104,
-                  109,
-                  67,
-                  104,
-                  97,
-                  105,
-                  110
-                ]
+                "kind": "arg",
+                "path": "fileHash"
               }
             ]
           }
@@ -82,6 +70,38 @@ export type RhythmChain = {
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "verifyMusic",
+      "discriminator": [
+        220,
+        188,
+        83,
+        190,
+        12,
+        244,
+        75,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "rhythmChain",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "fileHash"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "fileHash",
+          "type": "string"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -99,12 +119,59 @@ export type RhythmChain = {
       ]
     }
   ],
+  "events": [
+    {
+      "name": "musicVerified",
+      "discriminator": [
+        38,
+        205,
+        164,
+        181,
+        15,
+        20,
+        251,
+        135
+      ]
+    }
+  ],
   "types": [
+    {
+      "name": "musicVerified",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "hash",
+            "type": "string"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "isAuthentic",
+            "type": "bool"
+          },
+          {
+            "name": "fileName",
+            "type": "string"
+          },
+          {
+            "name": "fileAuthor",
+            "type": "string"
+          }
+        ]
+      }
+    },
     {
       "name": "rhythmChain",
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
           {
             "name": "fileHash",
             "type": "string"

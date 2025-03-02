@@ -8,6 +8,7 @@ skip-lint = false
 [programs.localnet]
 rhythmChain = "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF"
 
+
 [registry]
 url = "https://api.apr.dev"
 
