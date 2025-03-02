@@ -5,19 +5,19 @@ export function HowItWorks() {
   const steps = [
     {
       icon: Fingerprint,
-      title: "audio fingerprinting",
-      description: "we extract unique audio features to create a digital fingerprint of the music",
+      title: "secure watermarking",
+      description: "we create a unique fingerprint of your content",
     },
     {
       icon: Database,
       title: "blockchain verification",
       description: "we check the fingerprint against our decentralized registry of original works",
     },
-    {
-      icon: Wand2,
-      title: "ai detection",
-      description: "our algorithms identify patterns common in ai-generated music",
-    },
+    // {
+    //   icon: Wand2,
+    //   title: "ai detection",
+    //   description: "our algorithms identify patterns common in ai-generated music",
+    // },
     {
       icon: Shield,
       title: "verification certificate",
