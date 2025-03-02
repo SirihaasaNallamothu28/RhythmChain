@@ -2,49 +2,58 @@
 
 use anchor_lang::prelude::*;
 
+// TODO: Change with program id
 declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
 pub mod rhythmChain {
     use super::*;
 
-  pub fn close(_ctx: Context<CloseRhythmChain>) -> Result<()> {
+  //pub fn decrement(ctx: Context<Update>) -> Result<()> {
+  //  ctx.accounts.rhythmChain.count = ctx.accounts.rhythmChain.count.checked_sub(1).unwrap();
+  //  Ok(())
+  //}
+  //
+  //pub fn increment(ctx: Context<Update>) -> Result<()> {
+  //  ctx.accounts.rhythmChain.count = ctx.accounts.rhythmChain.count.checked_add(1).unwrap();
+  //  Ok(())
+  //}
+
+  pub fn initialize(ctx: Context<InitializeRhythmChain>,
+                    file_name :String,
+        file_author :String,
+        file_timestamp: u64,
+        file_length: u64,
+        file_hash: String) -> Result<()> {
+        ctx.accounts.rhythmChain.name = file_name;
+        ctx.accounts.rhythmChain.author = file_author;
+        ctx.accounts.rhythmChain.timestamp = file_timestamp;
+        ctx.accounts.rhythmChain.length = file_length;
+        ctx.accounts.rhythmChain.file_hash = file_hash;
+
     Ok(())
   }
 
-  pub fn decrement(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.rhythmChain.count = ctx.accounts.rhythmChain.count.checked_sub(1).unwrap();
-    Ok(())
-  }
-
-  pub fn increment(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.rhythmChain.count = ctx.accounts.rhythmChain.count.checked_add(1).unwrap();
-    Ok(())
-  }
-
-  pub fn initialize(_ctx: Context<InitializeRhythmChain>) -> Result<()> {
-    Ok(())
-  }
-
-  pub fn set(ctx: Context<Update>, value: u8) -> Result<()> {
-    ctx.accounts.rhythmChain.count = value.clone();
-    Ok(())
-  }
 }
 
 #[derive(Accounts)]
 pub struct InitializeRhythmChain<'info> {
   #[account(mut)]
-  pub payer: Signer<'info>,
+  pub signer: Signer<'info>,
 
   #[account(
   init,
   space = 8 + RhythmChain::INIT_SPACE,
-  payer = payer
+  payer = signer
+        seeds = &[b"rhythmChain".as_ref()],
+        bump = RhythmChain::bump(&ctx.accounts.signer.key().to_bytes()),
   )]
   pub rhythmChain: Account<'info, RhythmChain>,
   pub system_program: Program<'info, System>,
 }
+
+
+
 #[derive(Accounts)]
 pub struct CloseRhythmChain<'info> {
   #[account(mut)]
@@ -66,5 +75,14 @@ pub struct Update<'info> {
 #[account]
 #[derive(InitSpace)]
 pub struct RhythmChain {
-  count: u8,
+  #[max_len(64)] // sha256 hash in hex, each character is 4 bits
+  file_hash: String,
+
+  #[max_len(128)] // file name max is 128
+  name: String,
+
+  #[max_len(128)] // author name
+  author: String,
+  timestamp: u64,
+  length: u64,
 }
