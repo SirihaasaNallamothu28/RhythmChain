@@ -44,10 +44,12 @@ pub struct InitializeRhythmChain<'info> {
   #[account(
   init,
   space = 8 + RhythmChain::INIT_SPACE,
-  payer = signer
-        seeds = &[b"rhythmChain".as_ref()],
-        bump = RhythmChain::bump(&ctx.accounts.signer.key().to_bytes()),
+  payer = signer, 
+        seeds = [b"rhythmChain"],
+        bump
+        // bump = RhythmChain::bump(&ctx.accounts.signer.key().to_bytes()),
   )]
+  
   pub rhythmChain: Account<'info, RhythmChain>,
   pub system_program: Program<'info, System>,
 }
