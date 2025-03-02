@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,19 +11,23 @@ import { Progress } from "@/components/ui/progress";
 import { Waveform } from "@/components/waveform";
 import { VerificationResult } from "@/components/verification-result";
 import { Upload, Link2, Music, Loader2 } from "lucide-react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
+
+// You'll need to import your IDL
+import idl from "@/idl/rhythm_chain.json";
+import { AnchorProvider, BN, Program, web3 } from "@coral-xyz/anchor";
+
+const PROGRAM_ID = "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF";
 
 export function MusicVerifier() {
+  const { connection } = useConnection();
+  const wallet = useAnchorWallet();
+  const [program, setProgram] = useState<Program | null>(null);
+
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [hash, setHash] = useState<string | null>(null);
-
-  const hashMessage = async (message: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  };
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationComplete, setVerificationComplete] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -34,7 +37,61 @@ export function MusicVerifier() {
     artist?: string;
     title?: string;
     registrationDate?: string;
+    owner?: string;
   } | null>(null);
+
+  // For registration form
+  const [artistName, setArtistName] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+
+  // Initialize program when wallet is connected
+  useEffect(() => {
+    if (wallet && connection) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: "processed",
+      });
+
+      try {
+        const programId = new PublicKey(PROGRAM_ID);
+        const program = new Program(idl, programId, provider);
+        setProgram(program);
+      } catch (error) {
+        console.error("Failed to initialize program:", error);
+      }
+    }
+  }, [wallet, connection]);
+
+  // File hash function - uses the actual file content, not just a text representation
+  const hashFile = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+
+          if (!arrayBuffer) {
+            reject(new Error("Failed to read file"));
+            return;
+          }
+
+          // Use Web Crypto API for hashing
+          const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+          resolve(hashHex);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Error reading file"));
+      reader.readAsArrayBuffer(file);
+    });
+  };
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -47,15 +104,9 @@ export function MusicVerifier() {
     setFile(selectedFile);
 
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const hexString = Array.from(uint8Array)
-        .map((byte) => byte.toString(16).padStart(2, "0"))
-        .join("");
-      const computedHash = await hashMessage(hexString);
+      const computedHash = await hashFile(selectedFile);
       setHash(computedHash);
       console.log("SHA-256 Hash:", computedHash);
-      alert("Audio uploaded successfully!");
     } catch (error) {
       console.error("Error reading audio file:", error);
       alert("Failed to process the audio file.");
@@ -65,50 +116,192 @@ export function MusicVerifier() {
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
     setFile(null);
+    setHash(null);
   };
 
-  const simulateVerification = () => {
-    setIsVerifying(true);
+  const simulateProgress = (callback: () => void) => {
     setProgress(0);
-    setVerificationComplete(false);
 
-    // Simulate progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         const newProgress = prev + Math.random() * 15;
         if (newProgress >= 100) {
           clearInterval(interval);
-          setTimeout(() => {
-            // Randomly determine if the music is original or not for demo purposes
-            const isOriginal = Math.random() > 0.5;
-            setResult({
-              isOriginal,
-              confidence: 70 + Math.floor(Math.random() * 25),
-              artist: isOriginal ? "olivia rodriguez" : undefined,
-              title: isOriginal ? "digital heartbeat" : undefined,
-              registrationDate: isOriginal ? "2024-12-15" : undefined,
-            });
-            setVerificationComplete(true);
-            setIsVerifying(false);
-          }, 500);
+          callback();
           return 100;
         }
         return newProgress;
       });
-    }, 500);
+    }, 300);
+  };
+
+  const verifyMusic = async () => {
+    if (!file || !hash || !program) return;
+
+    setIsVerifying(true);
+
+    try {
+      // Simulate progress for UI feedback
+      simulateProgress(async () => {
+        try {
+          // Find the PDA for this hash
+          const [pda] = PublicKey.findProgramAddressSync(
+            [Buffer.from(hash)],
+            program.programId
+          );
+
+          try {
+            // Try to fetch the account - if it exists, the file has been registered
+            const musicRecord = await (
+              program.account as any
+            ).rhythmChain.fetch(pda);
+
+            // Format the timestamp as a date
+            const timestamp = new Date(
+              Number(musicRecord.fileTimestamp) * 1000
+            );
+            const formattedDate = timestamp.toISOString().split("T")[0];
+
+            setResult({
+              isOriginal: true,
+              confidence: 100, // We're 100% confident since we found a blockchain record
+              artist: musicRecord.fileAuthor,
+              title: musicRecord.fileName,
+              registrationDate: formattedDate,
+              owner: musicRecord.owner.toString(),
+            });
+
+            setVerificationComplete(true);
+          } catch (error) {
+            // Account not found, file is not registered
+            setResult({
+              isOriginal: false,
+              confidence: 0,
+              artist: undefined,
+              title: undefined,
+              registrationDate: undefined,
+            });
+
+            // Show registration form
+            setShowRegistrationForm(true);
+            setVerificationComplete(true);
+          }
+        } catch (error) {
+          console.error("Error during verification:", error);
+          setResult({
+            isOriginal: false,
+            confidence: 0,
+            artist: undefined,
+            title: undefined,
+            registrationDate: undefined,
+          });
+          setVerificationComplete(true);
+        }
+
+        setIsVerifying(false);
+      });
+    } catch (error) {
+      console.error("Error verifying music:", error);
+      setIsVerifying(false);
+      setVerificationComplete(true);
+      setResult({
+        isOriginal: false,
+        confidence: 0,
+      });
+    }
+  };
+
+  const registerMusic = async () => {
+    if (!file || !hash || !program || !wallet) {
+      alert("Missing required information");
+      return;
+    }
+
+    const fileName = file.name;
+
+    if (!artistName) {
+      alert("Please enter the artist name");
+      return;
+    }
+
+    setIsRegistering(true);
+
+    try {
+      simulateProgress(async () => {
+        try {
+          // Get timestamp and file size
+          const timestamp = Math.floor(Date.now() / 1000);
+          const fileLength = file.size;
+
+          // Create a PDA for this file hash
+          const [pda] = PublicKey.findProgramAddressSync(
+            [Buffer.from(hash)],
+            program.programId
+          );
+
+          // Call the initialize function
+          const tx = await program.methods
+            .initialize(
+              fileName,
+              artistName,
+              new BN(timestamp),
+              new BN(fileLength),
+              hash
+            )
+            .accounts({
+              signer: wallet.publicKey,
+              rhythmChain: pda,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .rpc();
+
+          console.log("Transaction signature:", tx);
+
+          // Update result with registration info
+          setResult({
+            isOriginal: true,
+            confidence: 100,
+            artist: artistName,
+            title: fileName,
+            registrationDate: new Date().toISOString().split("T")[0],
+            owner: wallet.publicKey.toString(),
+          });
+
+          setShowRegistrationForm(false);
+          setVerificationComplete(true);
+        } catch (error) {
+          console.error("Error registering music:", error);
+          alert(
+            "Failed to register music. It might already be registered or there was a transaction error."
+          );
+        }
+
+        setIsRegistering(false);
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      setIsRegistering(false);
+      alert("An error occurred during registration");
+    }
   };
 
   const handleVerify = () => {
-    if (file || url) {
-      simulateVerification();
+    if (file) {
+      verifyMusic();
+    } else if (url) {
+      // Currently URL verification not implemented
+      alert("URL verification is not implemented yet");
     }
   };
 
   const resetVerification = () => {
     setFile(null);
     setUrl("");
+    setHash(null);
     setVerificationComplete(false);
     setResult(null);
+    setShowRegistrationForm(false);
+    setArtistName("");
   };
 
   return (
@@ -214,7 +407,7 @@ export function MusicVerifier() {
                     : progress < 60
                     ? "comparing with blockchain registry..."
                     : progress < 90
-                    ? "analyzing ai generation patterns..."
+                    ? "analyzing audio patterns..."
                     : "finalizing verification..."}
                 </p>
               </div>
@@ -224,7 +417,7 @@ export function MusicVerifier() {
               <Button
                 size="lg"
                 onClick={handleVerify}
-                disabled={isVerifying || (!file && !url)}
+                disabled={isVerifying || (!file && !url) || !wallet}
                 className="gap-2 lowercase bg-violet-600 hover:bg-violet-700 text-white"
               >
                 {isVerifying ? (
@@ -232,11 +425,76 @@ export function MusicVerifier() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     verifying...
                   </>
+                ) : !wallet ? (
+                  <>connect wallet to verify</>
                 ) : (
                   <>verify authenticity</>
                 )}
               </Button>
             </div>
+          </div>
+        ) : showRegistrationForm ? (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-medium lowercase text-zinc-200">
+                music not found in registry
+              </h3>
+              <p className="text-sm text-zinc-400 lowercase mt-2">
+                this music hasn't been registered yet. register it as yours?
+              </p>
+            </div>
+
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="artist-name" className="lowercase text-zinc-400">
+                artist name
+              </Label>
+              <Input
+                id="artist-name"
+                type="text"
+                value={artistName}
+                onChange={(e) => setArtistName(e.target.value)}
+                placeholder="enter your artist name"
+                className="bg-zinc-800 border-zinc-700 text-zinc-300"
+              />
+            </div>
+
+            <div className="flex justify-center gap-4">
+              <Button
+                size="lg"
+                onClick={registerMusic}
+                disabled={isRegistering || !artistName || !wallet}
+                className="gap-2 lowercase bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                {isRegistering ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    registering...
+                  </>
+                ) : (
+                  <>register as mine</>
+                )}
+              </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={resetVerification}
+                className="lowercase border-zinc-700 text-zinc-300"
+              >
+                cancel
+              </Button>
+            </div>
+
+            {isRegistering && (
+              <div className="mt-4">
+                <Progress value={progress} className="h-1 w-full bg-zinc-800" />
+                <p className="text-center text-sm text-zinc-500 lowercase mt-2">
+                  {progress < 50
+                    ? "preparing transaction..."
+                    : "registering on solana blockchain..."}
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <VerificationResult result={result} onReset={resetVerification} />

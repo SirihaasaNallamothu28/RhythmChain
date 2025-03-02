@@ -1,23 +1,31 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, XCircle, AlertTriangle, RotateCcw, ExternalLink } from "lucide-react"
+import {
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  ExternalLink,
+  AlertTriangle,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface VerificationResultProps {
   result: {
-    isOriginal: boolean
-    confidence: number
-    artist?: string
-    title?: string
-    registrationDate?: string
-  } | null
-  onReset: () => void
+    isOriginal: boolean;
+    confidence: number;
+    artist?: string;
+    title?: string;
+    registrationDate?: string;
+    owner?: string;
+  } | null;
+  onReset: () => void;
 }
 
-export function VerificationResult({ result, onReset }: VerificationResultProps) {
-  if (!result) return null
+export function VerificationResult({
+  result,
+  onReset,
+}: VerificationResultProps) {
+  if (!result) return null;
 
   return (
     <div className="space-y-6">
@@ -47,7 +55,9 @@ export function VerificationResult({ result, onReset }: VerificationResultProps)
         <CardContent className="p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm lowercase text-zinc-400">confidence score</span>
+              <span className="text-sm lowercase text-zinc-400">
+                confidence score
+              </span>
               <Badge
                 variant={result.confidence > 80 ? "default" : "outline"}
                 className="font-mono lowercase bg-violet-600"
@@ -59,21 +69,55 @@ export function VerificationResult({ result, onReset }: VerificationResultProps)
             {result.isOriginal && (
               <>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm lowercase text-zinc-400">artist</span>
-                  <span className="lowercase text-zinc-300">{result.artist}</span>
+                  <span className="text-sm lowercase text-zinc-400">
+                    artist
+                  </span>
+                  <span className="lowercase text-zinc-300">
+                    {result.artist}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm lowercase text-zinc-400">title</span>
-                  <span className="lowercase text-zinc-300">{result.title}</span>
+                  <span className="lowercase text-zinc-300">
+                    {result.title}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm lowercase text-zinc-400">registered on</span>
-                  <span className="font-mono text-sm lowercase text-zinc-300">{result.registrationDate}</span>
+                  <span className="text-sm lowercase text-zinc-400">
+                    registered on
+                  </span>
+                  <span className="font-mono text-sm lowercase text-zinc-300">
+                    {result.registrationDate}
+                  </span>
                 </div>
+                {result.owner && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm lowercase text-zinc-400">
+                      owner wallet
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-xs lowercase text-zinc-500 truncate max-w-[200px]">
+                        {result.owner}
+                      </span>
+                      <a
+                        href={`https://explorer.solana.com/address/${result.owner}?cluster=devnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-violet-400 hover:text-violet-300"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm lowercase text-zinc-400">blockchain id</span>
-                  <span className="font-mono text-xs lowercase text-zinc-500">
-                    0x7f9e4b5c3d2a1f8e6b5c4d3a2f1e0b9c8d7e6f5
+                  <span className="text-sm lowercase text-zinc-400">
+                    blockchain id
+                  </span>
+                  <span className="font-mono text-xs lowercase text-zinc-500 truncate max-w-[200px]">
+                    {result.isOriginal
+                      ? `sol:${result.owner?.substring(0, 16)}...`
+                      : "not registered"}
                   </span>
                 </div>
               </>
@@ -84,10 +128,13 @@ export function VerificationResult({ result, onReset }: VerificationResultProps)
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-500" />
                   <div className="space-y-1">
-                    <p className="font-medium lowercase text-amber-500">potential ai-generated content detected</p>
+                    <p className="font-medium lowercase text-amber-500">
+                      not registered on blockchain
+                    </p>
                     <p className="text-sm lowercase text-amber-400/80">
-                      our analysis indicates this music may have been created using ai tools or contains elements that
-                      cannot be verified as original human creation
+                      this music has not been registered on the blockchain yet.
+                      if you're the creator, you can register it to establish
+                      verifiable ownership.
                     </p>
                   </div>
                 </div>
@@ -106,14 +153,21 @@ export function VerificationResult({ result, onReset }: VerificationResultProps)
           <RotateCcw className="h-4 w-4" />
           verify another
         </Button>
-        {result.isOriginal && (
-          <Button className="gap-2 lowercase bg-violet-600 hover:bg-violet-700 text-white">
+        {result.isOriginal && result.owner && (
+          <Button
+            className="gap-2 lowercase bg-violet-600 hover:bg-violet-700 text-white"
+            onClick={() =>
+              window.open(
+                `https://explorer.solana.com/address/${result.owner}?cluster=devnet`,
+                "_blank"
+              )
+            }
+          >
             view blockchain certificate
             <ExternalLink className="h-4 w-4" />
           </Button>
         )}
       </div>
     </div>
-  )
+  );
 }
-
