@@ -18,20 +18,38 @@ pub mod rhythmChain {
   //  Ok(())
   //}
 
-  pub fn initialize(ctx: Context<InitializeRhythmChain>,
-                    file_name :String, file_author :String, file_timestamp: u64,
-        file_length: u64,
-        file_hash: String) -> Result<()> {
-    ctx.accounts.rhythmChain.name = file_name;
-    ctx.accounts.rhythmChain.author = file_author;
-    ctx.accounts.rhythmChain.timestamp = file_timestamp;
-    ctx.accounts.rhythmChain.length = file_length;
+  pub fn initialize(
+    ctx: Context<InitializeRhythmChain>,
+    file_name: String,
+    file_author: String,
+    file_timestamp: u64,
+    file_length: u64,
+    file_hash: String,
+) -> Result<()> {
+    ctx.accounts.rhythmChain.file_name = file_name;
+    ctx.accounts.rhythmChain.file_author = file_author;
+    ctx.accounts.rhythmChain.file_timestamp = file_timestamp;
+    ctx.accounts.rhythmChain.file_length = file_length;
     ctx.accounts.rhythmChain.file_hash = file_hash;
 
-    msg!("RhythmChain initialized with values {:?}", ctx.accounts.rhythmChain);
+    msg!("RhythmChain initialized with values: {:?}", ctx.accounts.rhythmChain);
 
     Ok(())
-  }
+}
+  // pub fn initialize(ctx: Context<InitializeRhythmChain>,
+  //                   file_name :String, file_author :String, file_timestamp: u64,
+  //       file_length: u64,
+  //       file_hash: String) -> Result<()> {
+  //   ctx.accounts.rhythmChain.name = file_name;
+  //   ctx.accounts.rhythmChain.author = file_author;
+  //   ctx.accounts.rhythmChain.timestamp = file_timestamp;
+  //   ctx.accounts.rhythmChain.length = file_length;
+  //   ctx.accounts.rhythmChain.file_hash = file_hash;
+
+  //   msg!("RhythmChain initialized with values {:?}", ctx.accounts.rhythmChain);
+
+  //   Ok(())
+  // }
 
 }
 
@@ -74,8 +92,11 @@ pub struct Update<'info> {
 }
 
 #[account]
-#[derive(InitSpace)]
+// #[derive(InitSpace)]
+#[derive(InitSpace, Debug)] // Added Debug here
 pub struct RhythmChain {
+  
+  
   #[max_len(64)] // sha256 hash in hex, each character is 4 bits
   file_hash: String,
 
@@ -86,4 +107,5 @@ pub struct RhythmChain {
   file_author: String,
   file_timestamp: u64,
   file_length: u64,
+  
 }
