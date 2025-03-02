@@ -2,7 +2,6 @@
 
 use anchor_lang::prelude::*;
 
-// TODO: Change with program id
 declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
@@ -20,16 +19,16 @@ pub mod rhythmChain {
   //}
 
   pub fn initialize(ctx: Context<InitializeRhythmChain>,
-                    file_name :String,
-        file_author :String,
-        file_timestamp: u64,
+                    file_name :String, file_author :String, file_timestamp: u64,
         file_length: u64,
         file_hash: String) -> Result<()> {
-        ctx.accounts.rhythmChain.name = file_name;
-        ctx.accounts.rhythmChain.author = file_author;
-        ctx.accounts.rhythmChain.timestamp = file_timestamp;
-        ctx.accounts.rhythmChain.length = file_length;
-        ctx.accounts.rhythmChain.file_hash = file_hash;
+    ctx.accounts.rhythmChain.name = file_name;
+    ctx.accounts.rhythmChain.author = file_author;
+    ctx.accounts.rhythmChain.timestamp = file_timestamp;
+    ctx.accounts.rhythmChain.length = file_length;
+    ctx.accounts.rhythmChain.file_hash = file_hash;
+
+    msg!("RhythmChain initialized with values {:?}", ctx.accounts.rhythmChain);
 
     Ok(())
   }
@@ -37,6 +36,7 @@ pub mod rhythmChain {
 }
 
 #[derive(Accounts)]
+#[instruction(file_name: String, file_author: String, file_timestamp: u64, file_length: u64, file_hash: String)] // ENSURE THIS ORDER IS CORRECT
 pub struct InitializeRhythmChain<'info> {
   #[account(mut)]
   pub signer: Signer<'info>,
@@ -51,7 +51,6 @@ pub struct InitializeRhythmChain<'info> {
   pub rhythmChain: Account<'info, RhythmChain>,
   pub system_program: Program<'info, System>,
 }
-
 
 
 #[derive(Accounts)]
@@ -79,10 +78,10 @@ pub struct RhythmChain {
   file_hash: String,
 
   #[max_len(128)] // file name max is 128
-  name: String,
+  file_name: String,
 
   #[max_len(128)] // author name
-  author: String,
-  timestamp: u64,
-  length: u64,
+  file_author: String,
+  file_timestamp: u64,
+  file_length: u64,
 }
